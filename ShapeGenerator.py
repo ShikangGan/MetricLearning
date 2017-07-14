@@ -6,6 +6,7 @@
 # maybe better to use QGraphicsView, QGraphicsScene, QGraphicsItem
 
 import sys
+import re
 from PyQt4 import QtGui, QtCore
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
@@ -16,9 +17,10 @@ import numpy as np
 Width=600
 Height=400
 pixelmat=np.zeros((Width,Height))
+shapes=[]
 class MyCanvas(QtGui.QWidget):
     
-    shapes=[]
+    # shapes=[]
     
     def __init__(self):
         super(MyCanvas, self).__init__()
@@ -38,7 +40,7 @@ class MyCanvas(QtGui.QWidget):
 
 
         # drawing shapes from list
-        for shape in self.shapes:
+        for shape in shapes:
             if shape[0] == 'circle':
                 self.drawCircle(qp,shape[1],shape[2],shape[3])
             elif shape[0] == 'ellipse':
@@ -78,7 +80,7 @@ class MyCanvas(QtGui.QWidget):
                 for j in range(y1,y2+1):
                     if ((i-centerX)**2+(j-centerY)**2) <= (radius**2):
                         pixelmat[i,j]=1
-            self.shapes.append(('circle',centerX,centerY,radius))
+            shapes.append(('circle',centerX,centerY,radius))
             self.update()
             # self.DrawPicture()
             
@@ -116,7 +118,7 @@ class MyCanvas(QtGui.QWidget):
                     # if (i*cos(angle)+j*sin(angle)-centerX)**2.0/(radiusX**2)+(-i*sin(angle)+j*cos(angle)-centerY)**2/(radiusY**2)<=1:
                         pixelmat[i,j]=1
           
-            self.shapes.append(('ellipse',centerX,centerY,radiusX,radiusY,angle))
+            shapes.append(('ellipse',centerX,centerY,radiusX,radiusY,angle))
             self.update()
         else:
             self.ErrorMessage()
@@ -137,7 +139,7 @@ class MyCanvas(QtGui.QWidget):
                 for j in range(centerY-height/2,centerY+height/2):
                     pixelmat[i,j]=1
             
-            self.shapes.append(('rectangle',centerX,centerY,width,height))
+            shapes.append(('rectangle',centerX,centerY,width,height))
             self.update()
         else:
             self.ErrorMessage()
@@ -165,7 +167,7 @@ class MyCanvas(QtGui.QWidget):
                 for j in range(y1,y2):
                     if self.ifInPolygon(i,j,*points):
                         pixelmat[i,j]=1
-            self.shapes.append(('polygon',points))
+            shapes.append(('polygon',points))
             self.update()
         else:
             self.ErrorMessage()
@@ -191,7 +193,10 @@ class MyCanvas(QtGui.QWidget):
 
 
     def ErrorMessage(self):       
-        print 'invalid parameters'
+        self.EM=QMessageBox()
+        self.EM.setText('invalid parameters')
+        self.EM.exec_()
+        # print 'invalid parameters'
 
     def drawRect(self,qp,centerX,centerY,width,height):
         '''drawing rectangle'''
@@ -207,7 +212,7 @@ class MyCanvas(QtGui.QWidget):
         qp.setBrush(QtGui.QColor('green'))
             
         # draw
-        qp.drawEllipse(centerX,centerY,radius,radius)
+        qp.drawEllipse(centerX-radius,centerY-radius,radius*2,radius*2)
 
         
     def drawEllipse(self,qp,centerX,centerY,radiusX,radiusY,angle):
@@ -220,7 +225,7 @@ class MyCanvas(QtGui.QWidget):
         
         qp.translate(centerX,centerY)
         qp.rotate(angle)
-        qp.drawEllipse(-radiusX/2,-radiusY/2,radiusX,radiusY)
+        qp.drawEllipse(-radiusX,-radiusY,radiusX*2,radiusY*2)
         qp.rotate(-angle)
         qp.translate(-centerX,-centerY)
 
@@ -280,6 +285,153 @@ class MyCanvas(QtGui.QWidget):
 
 # --- main ---
 
+class InputParametersDialog(QtGui.QDialog):
+    
+    def __init__(self,shapetype):
+        super(InputParametersDialog, self).__init__()
+        self.type=shapetype
+        self.flag=False
+        self.setWindowTitle("Input Parameters")
+        if self.type=='Circle':
+            self.centerX=200
+            self.centerY=200
+            self.radius=20
+            
+            centerLabel=QtGui.QLabel('Center Point Index')
+            self.centerXEdit=QtGui.QLineEdit()
+            self.centerYEdit=QtGui.QLineEdit()
+            radiusLabel=QtGui.QLabel('Radius')
+            self.radiusEdit=QtGui.QLineEdit()
+            self.okButton=QPushButton("&OK")
+            self.okButton.clicked.connect(self.OkButtonClicked)
+
+            self.grid=QtGui.QGridLayout()
+            self.grid.addWidget(centerLabel,0,0)
+            self.grid.addWidget(self.centerXEdit,0,1)
+            self.grid.addWidget(self.centerYEdit,0,2)
+            self.grid.addWidget(radiusLabel,1,0)
+            self.grid.addWidget(self.radiusEdit,1,1)
+            self.grid.addWidget(self.okButton,2,1)
+
+
+        elif self.type=='Rectangle':
+            self.centerX=100
+            self.centerY=100
+            self.width=100
+            self.height=100
+
+            centerLabel=QtGui.QLabel('Center Point Index')
+            self.centerXEdit=QtGui.QLineEdit()
+            self.centerYEdit=QtGui.QLineEdit()
+            widthLabel=QtGui.QLabel('Width')
+            heightLabel=QLabel('Height')
+            self.widthEdit=QtGui.QLineEdit()
+            self.heightEdit=QtGui.QLineEdit()
+            self.okButton=QPushButton("&OK")
+            self.okButton.clicked.connect(self.OkButtonClicked)
+
+            self.grid=QtGui.QGridLayout()
+            self.grid.addWidget(centerLabel,0,0)
+            self.grid.addWidget(self.centerXEdit,0,1)
+            self.grid.addWidget(self.centerYEdit,0,2)
+            self.grid.addWidget(widthLabel,1,0)
+            self.grid.addWidget(self.widthEdit,1,1)
+            self.grid.addWidget(heightLabel,2,0)
+            self.grid.addWidget(self.heightEdit,2,1)
+            self.grid.addWidget(self.okButton,3,1)
+        
+        elif self.type=='Ellipse':
+            self.centerX=100
+            self.centerY=100
+            self.radiusX=100
+            self.radiusY=100
+            self.angle=0
+
+            centerLabel=QtGui.QLabel('Center Point Index')
+            self.centerXEdit=QtGui.QLineEdit()
+            self.centerYEdit=QtGui.QLineEdit()
+            widthLabel=QtGui.QLabel('RadiusX')
+            heightLabel=QLabel('RadiusY')
+            self.widthEdit=QtGui.QLineEdit()
+            self.heightEdit=QtGui.QLineEdit()
+            angleLabel=QLabel('Rotate angle')
+            self.angleEdit=QLineEdit()
+            self.okButton=QPushButton("&OK")
+            self.okButton.clicked.connect(self.OkButtonClicked)
+
+            self.grid=QtGui.QGridLayout()
+            self.grid.addWidget(centerLabel,0,0)
+            self.grid.addWidget(self.centerXEdit,0,1)
+            self.grid.addWidget(self.centerYEdit,0,2)
+            self.grid.addWidget(widthLabel,1,0)
+            self.grid.addWidget(self.widthEdit,1,1)
+            self.grid.addWidget(heightLabel,2,0)
+            self.grid.addWidget(self.heightEdit,2,1)
+            self.grid.addWidget(angleLabel,3,0)
+            self.grid.addWidget(self.angleEdit,3,1)
+            self.grid.addWidget(self.okButton,4,1)
+
+        elif self.type=='Polygon':
+            self.points=[]
+            PointLabel=QLabel('Input Coordinates of Points in order')
+            self.PointEdit=QLineEdit()
+            self.okButton=QPushButton("&OK")
+            self.okButton.clicked.connect(self.OkButtonClicked)
+
+            self.grid=QtGui.QGridLayout()
+            self.grid.addWidget(PointLabel,0,0)
+            self.grid.addWidget(self.PointEdit,1,0)
+            self.grid.addWidget(self.okButton,2,0)
+
+    
+        self.setLayout(self.grid)
+        self.show()
+
+    def OkButtonClicked(self):
+        if self.type=='Circle':
+            self.centerX=int(self.centerXEdit.text())
+            self.centerY=int(self.centerYEdit.text())
+            self.radius=int(self.radiusEdit.text())
+            print self.centerX,self.centerY,self.radius
+            MyCanvas().CircleGenerator(self.centerX,self.centerY,self.radius)
+            self.close()
+
+        elif self.type=='Rectangle':
+            self.centerX=int(self.centerXEdit.text())
+            self.centerY=int(self.centerYEdit.text())
+            self.width=int(self.widthEdit.text())
+            self.height=int(self.heightEdit.text())
+            print self.centerX,self.centerY,self.width,self.height
+            MyCanvas().RectangleGenerator(self.centerX,self.centerY,self.width,self.height)
+            self.close()
+
+        elif self.type=='Ellipse':
+            self.centerX=int(self.centerXEdit.text())
+            self.centerY=int(self.centerYEdit.text())
+            self.radiusX=int(self.widthEdit.text())
+            self.radiusY=int(self.heightEdit.text())
+            self.angle=int(self.angleEdit.text())
+            print self.centerX,self.centerY,self.radiusX,self.radiusY,self.angle
+            MyCanvas().EllipseGenerator(self.centerX,self.centerY,self.radiusX,self.radiusY,self.angle)
+            self.close()
+
+        elif self.type=='Polygon':
+            # print self.PointEdit.text()
+            str=re.findall(r"\d+\.?\d*",self.PointEdit.text())
+            # print self.str
+            for i in range(0,str.__len__()):
+                self.points.append(int(str[i]))
+            print self.points
+            MyCanvas().PolygonGenerator(*self.points)
+            self.close()
+
+        self.flag=True
+
+
+
+
+
+
 class App(QtGui.QWidget):
 
     def __init__(self):
@@ -288,59 +440,33 @@ class App(QtGui.QWidget):
         self.initUI()
 
     def CircleChose(self):
-        Dial=QtGui.QDialog(self)
-        Dial.setWindowTitle('Circle Parameters')
 
-        centerLabel=QtGui.QLabel('Center Point Index')
-        centerXEdit=QtGui.QLineEdit()
-        centerYEdit=QtGui.QLineEdit()
-        radiusLabel=QtGui.QLabel('Radius')
-        radiusEdit=QtGui.QLineEdit()
-        # buttonBox =QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok|QtGui.QDialogButtonBox.Cancel)
-        okButton=QPushButton("&OK")
-        # cancelButton=QPushButton("&Cancel")
-
-        grid=QtGui.QGridLayout()
-        grid.addWidget(centerLabel,0,0)
-        grid.addWidget(centerXEdit,0,1)
-        grid.addWidget(centerYEdit,0,2)
-        grid.addWidget(radiusLabel,1,0)
-        grid.addWidget(radiusEdit,1,1)
-        grid.addWidget(okButton,2,1)
-        # grid.addWidget(cancelButton,2,2)
-
-        Dial.setLayout(grid)
+        self.Dialog=InputParametersDialog('Circle')
+        # if self.Dialog.flag==True:
+        #     self.canvas.CircleGenerator(self.Dialog.centerX,self.Dialog.centerY,self.Dialog.radius)
         
-
-        # print centerYEdit.text()
-        self.Dialog = Dial
-        self.centerXEdit = centerXEdit
-        
-        okButton.clicked.connect(self.get_value)
-        # cancelButton.clicked.connect(Dial.close)
-        if Dial.exec_():
-            centerX=unicode(centerXEdit.text())
-            centerY=unicode(centerYEdit.text())
-            radius=unicode(radiusEdit.text())
-            print centerX,centerY,radius
-
-            
-        # self.Dial.setGeometry(100,200,300,400)
-        Dial.show()
-        self.canvas.CircleGenerator(40,50,20)
-
-    def get_value(self):
-        print self.centerXEdit.text()
 
     def EllipseChose(self):
-        self.canvas.EllipseGenerator(200,200,150,50,60)
+        self.Dialog=InputParametersDialog('Ellipse')
+        # if self.Dialog.flag==True:        
+        #     self.canvas.EllipseGenerator(200,200,150,50,60)
+
+
     def RectangleChose(self):
-        self.canvas.RectangleGenerator(200,200,40,40)
+
+        self.Dialog=InputParametersDialog('Rectangle')
+        # if self.Dialog.flag==True:
+        #     self.canvas.RectangleGenerator(200,200,40,40)
+
+
     def TriangleChose(self):
         pass
+
     def PolygonChose(self):
-        # self.canvas.PolygonGenerator(0,0,100,0,25,25,0,100)
-        self.canvas.PolygonGenerator(30,30,100,0,200,50,50,200,0,100)
+        self.Dialog=InputParametersDialog('Polygon')
+        # if self.Dialog.flag==True:
+        #     self.canvas.PolygonGenerator(30,30,100,0,200,50,50,200,0,100)
+
     def RandomShapeChose(self):
         pass
     
