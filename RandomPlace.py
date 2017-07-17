@@ -23,9 +23,10 @@ ShapeBase=[
     ('Ellipse',50,140), # radius in x,y
     ('Ellipse',100,40),
     ('Rectangle',80,40),
-    ('Polygon',20,0,0,40,-20,0,-10,0,-10,-20,10,-20,10,0),
+    # ('Polygon',20,0,0,40,-20,0,-10,0,-10,-20,10,-20,10,0),
     ('Triangle',0,0,130,0,0,150),
-    ('Polygon',60,0,0,50,-60,0,-30,-40,30,-40)
+    ('Polygon',60,0,0,50,-60,0,-30,-40,30,-40),
+    ('Circle',50)
 ]
 class MyCanvas(QtGui.QWidget):
     
@@ -456,7 +457,14 @@ class App(QtGui.QWidget):
         super(App, self).__init__()
 
         self.initUI()
-    def restart(self):     
+    def restart(self):  
+
+        for i in range(0,shapes.__len__()):
+            shapes.pop()
+
+        for i in range(0,Width):
+            for j in range(0,Height):
+                pixelmat[i][j]=0   
 
         for item in ShapeBase:
             if item[0]=='Ellipse':
@@ -550,39 +558,8 @@ class App(QtGui.QWidget):
 
         
         self.restart()
-                
             
-
-
-        # self.ShapeChoice=[
-        #     ('Circle',self.CircleChose),
-        #     ('Ellipse',self.EllipseChose),
-        #     ('Rectangle',self.RectangleChose),
-        #     # ('Triangle',self.TriangleChose),
-        #     ('Polygon',self.PolygonChose),
-        #     # ('RandomShape',self.RandomShapeChose)
-        # ]
-
-        
-
-        # #--- tool buttons ---        
-        # self.hboxTools = QtGui.QHBoxLayout()
-
-        # for name,func in self.ShapeChoice:
-        #     btn = QtGui.QPushButton(name)
-        #     btn.setCheckable(True)
-        #     btn.setAutoExclusive(True) 
-        #     btn.clicked.connect(func)
-        #     self.hboxTools.addWidget(btn)
-
-        #     if name == 'RandomShape':
-        #         btn.setChecked(True)
-        
-
-        # self.btnToolsGroup = QtGui.QGroupBox("Shape")
-        # self.btnToolsGroup.setLayout(self.hboxTools)
-        # self.vbox.addWidget(self.btnToolsGroup)
-    
+               
 
         self.btn=QPushButton("restart")
         self.btn.setCheckable(True)
